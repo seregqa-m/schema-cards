@@ -4,10 +4,11 @@ import {existsSync,readFileSync} from 'node:fs';
 import {cards,inventory} from '../site/data.js';
 import {emptyProfile,validateProfile,selected,meaningful,escapeHtml} from '../site/model.js';
 const ids=cards.map(c=>c.id);
-test('catalogue accounts for every supplied image and explicit missing card',()=>{
- assert.equal(cards.length,74);assert.equal(new Set(ids).size,74);assert.deepEqual(inventory.counts,{need:10,schema:17,resource:14,mode:33});
- const assets=[...inventory.instructions,...cards.flatMap(c=>[c.front,c.back].filter(Boolean))];assert.equal(assets.length,119);assert.equal(new Set(assets).size,119);
+test('complete catalogue accounts for every supplied image',()=>{
+ assert.equal(cards.length,75);assert.equal(new Set(ids).size,75);assert.deepEqual(inventory.counts,{need:10,schema:18,resource:14,mode:33});assert.deepEqual(inventory.missing,[]);assert.equal(inventory.actual,inventory.expected);assert.equal(inventory.photos,122);
+ const assets=[...inventory.instructions,...cards.flatMap(c=>[c.front,c.back].filter(Boolean))];assert.equal(assets.length,122);assert.equal(new Set(assets).size,122);
  for(const path of assets)assert(existsSync(new URL('../site/'+path,import.meta.url)),path);
+ for(const c of cards)assert(existsSync(new URL('../site/'+c.front.replace('assets/','assets/thumbs/'),import.meta.url)),c.title+' thumbnail');
  for(const c of cards)assert(c.title&&c.description&&c.question&&c.type&&c.sourceKind);
 });
 test('round trip preserves all private notes, choices and scenario',()=>{
@@ -26,7 +27,7 @@ test('user strings are escaped in HTML and report',()=>{
 });
 test('full text is present for all supplied backs',async()=>{
  const {cardText}=await import('../site/card-text.js');
- assert.equal(Object.keys(cardText).length,40);
+ assert.equal(Object.keys(cardText).length,42);
  for(const c of cards.filter(c=>c.back))assert(cardText[c.id]?.length>50,c.title);
 });
 test('every card photograph has a preserved source copy',()=>{
