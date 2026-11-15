@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Карточки схема-терапии: изучайте потребности, схемы и режимы, собирайте личный профиль для разговора с психологом. Записи остаются в браузере.">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Внутри — карточки схема-терапии</title>
+<link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css">
+<script type="module" src="./app.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">К содержимому</a>
+<aside class="sidebar">
+<a class="brand" data-view="library" href="#library" aria-label="Внутри — главная"><span class="brand-mark">в</span> внутри<span class="brand-dot">.</span></a>
+<p class="brand-caption">КАРТОЧКИ СХЕМА-ТЕРАПИИ</p>
+<nav class="primary" aria-label="Разделы">
+<button data-view="library" class="nav-item active"><span>▦</span> Библиотека <small id="total-count"></small></button>
+<button data-view="profile" class="nav-item"><span>◉</span> Мой профиль <small id="profile-count">0</small></button>
+<button data-view="guide" class="nav-item"><span>☷</span> Как работать</button>
+</nav>
+<div class="side-note"><span class="eyebrow">В СВОЁМ ТЕМПЕ</span><p>Не нужно выбирать всё.<br>Начните с того,<br>что откликается.</p><span class="tiny">Можно остановиться<br>и вернуться позже.</span></div>
+<div class="privacy-mini"><span class="status-dot"></span><span id="save-status" role="status">Сохранение в этом браузере</span><button data-view="privacy" aria-label="Подробнее о хранении">↗</button></div>
+</aside>
+<div class="workspace"><header class="topbar"><span id="breadcrumb">Пространство для самонаблюдения</span><span class="topbar-note">Без оценок. С вниманием к себе.</span></header>
+<div id="warning" role="alert" hidden></div>
+<main id="main" tabindex="-1"></main>
+<footer>Для самонаблюдения и разговора с психологом. Не диагностический тест.<button data-view="privacy">Данные и приватность</button></footer>
+</div>
+<dialog id="card-dialog" aria-labelledby="card-title"><div id="card-content"></div></dialog>
+<dialog id="confirm-dialog" aria-labelledby="confirm-title"><form method="dialog"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="button-row"><button value="cancel" class="button">Отмена</button><button value="yes" class="button primary-button" id="confirm-yes">Подтвердить</button></div></form></dialog>
+<div id="toast" role="status" hidden></div>
+<input type="file" id="import-file" accept="application/json,.json" hidden>
+<section id="print-report"></section>
+<noscript>Для локального сохранения профиля включите JavaScript. Никакие заметки не отправляются на сервер.</noscript>
+</body></html>

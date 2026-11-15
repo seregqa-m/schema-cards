@@ -1,0 +1,7 @@
+.DS_Store
+node_modules/
+research/
+qa/
+*vnutri-profile*.json
+
+AGENTS.md
