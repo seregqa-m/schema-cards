@@ -1,5 +1,6 @@
-import {reportCards,buildReport} from './report-model.js?v=20261116pdf2';
-import {escapeHtml as esc} from './model.js';
+import {exerciseHasContent,exerciseTitle} from './exercises-model.js?v=20261116ex2';
+import {reportCards,buildReport} from './report-model.js?v=20261116ex2';
+import {escapeHtml as esc} from './model.js?v=20261116ex2';
 
 let runtimePromise;
 function loadScript(file){
@@ -42,31 +43,37 @@ function makeBlob(pdfMake,definition){
   });
 }
 
-export function openReport({cards,profile,cardText}){
+export function openReport({cards,profile,cardText,exerciseIds,cardIds}){
   const snapshot=JSON.parse(JSON.stringify(profile));
   const candidates=reportCards(cards,snapshot);
-  let ids=new Set(candidates.map(c=>c.id));
+  const exercises=(snapshot.exercises||[]).filter(exerciseHasContent);
+  let ids=new Set((cardIds??candidates.map(c=>c.id)).filter(id=>candidates.some(c=>c.id===id)));
+  let pickedExercises=new Set((exerciseIds??exercises.map(e=>e.id)).filter(id=>exercises.some(e=>e.id===id)));
   let busy=false,generation=0,url;
   const dialog=document.querySelector('#export-dialog');
   const revoke=()=>{if(url){URL.revokeObjectURL(url);url=null;}};
   dialog.innerHTML=`<div class="dialog-toolbar export-toolbar"><h2 id="export-title">PDF для психолога</h2><button class="close" data-report="close" aria-label="Закрыть выгрузку">×</button></div>
-    <div class="export-body"><p>Выберите, что взять на встречу. Каждая карточка начнётся с новой страницы; длинные заметки продолжатся на следующих.</p>
+    <div class="export-body"><p>Выберите, что взять на встречу. Каждая карточка и запись упражнения начнётся с новой страницы; длинные заметки продолжатся на следующих.</p>
     <p class="export-privacy">Файл создаётся на вашем устройстве. Ничего не отправляется на сервер.</p>
     <fieldset id="export-controls"><legend class="sr-only">Состав PDF</legend>
-    <div class="export-options"><label><input type="checkbox" data-option="images" checked> Иллюстрации</label><label><input type="checkbox" data-option="fullText" checked> Полные описания</label><label><input type="checkbox" data-option="notes" checked> Мои заметки к карточкам</label><label><input type="checkbox" data-option="context" checked> Тема встречи и разбор ситуации</label></div>
-    <div class="export-selection-header"><strong id="export-count"></strong><div class="button-row"><button class="text-button" data-report="all">Выбрать все</button><button class="text-button" data-report="discuss">Только «Хочу обсудить»</button><button class="text-button" data-report="none">Снять выбор</button></div></div>
-    <div class="export-list">${candidates.map(c=>`<label class="export-card"><input type="checkbox" data-export-id="${c.id}" checked><img src="${esc(c.front.replace('assets/','assets/thumbs/'))}?v=20261116c" width="45" height="60" alt=""><span>${esc(c.title)}${snapshot.cards[c.id]?.discuss?'<small>Хочу обсудить</small>':''}</span></label>`).join('')||'<p class="muted">Пока нет выбранных карточек. Закройте это окно и добавьте карточки в свою карту.</p>'}</div>
+    <div class="export-options"><label><input type="checkbox" data-option="images" checked> Иллюстрации</label><label><input type="checkbox" data-option="fullText" checked> Полные описания</label><label><input type="checkbox" data-option="notes" ${exerciseIds?'':'checked'}> Мои заметки к карточкам</label><label><input type="checkbox" data-option="context" ${exerciseIds?'':'checked'}> Тема встречи и разбор ситуации</label></div>
+    <div class="export-selection-header"><strong id="export-count"></strong><div class="button-row"><button class="text-button" data-report="all">Все карточки</button><button class="text-button" data-report="discuss">Только «Хочу обсудить»</button><button class="text-button" data-report="none">Снять выбор карточек</button></div></div>
+    <div class="export-list">${candidates.map(c=>`<label class="export-card"><input type="checkbox" data-export-id="${c.id}" checked><img src="${esc(c.front.replace('assets/','assets/thumbs/'))}?v=20261116c" width="45" height="60" alt=""><span>${esc(c.title)}${snapshot.cards[c.id]?.discuss?'<small>Хочу обсудить</small>':''}</span></label>`).join('')||'<p class="muted">Карточек пока нет. Можно отметить их в библиотеке или выбрать в упражнении.</p>'}</div>
+    <div class="export-selection-header"><strong>Записи упражнений</strong><p class="tiny muted">Каждая выбранная запись включает её ответы. Снимите галочку у записи, которую не хотите передавать.</p></div>
+    <div class="export-list">${exercises.map(e=>`<label class="export-card"><input type="checkbox" data-export-exercise="${e.id}" ${pickedExercises.has(e.id)?'checked':''}><span>${esc(exerciseTitle(e))}<small>${new Date(e.createdAt).toLocaleDateString('ru-RU')}</small></span></label>`).join('')||'<p class="muted">Заполненные упражнения появятся здесь.</p>'}</div>
     </fieldset></div>
     <div class="export-bottom"><p id="export-status" role="status" aria-live="polite"></p><button id="create-pdf" class="button primary-button" data-report="create">Скачать PDF</button><a id="download-pdf" class="button primary-button" hidden>Скачать готовый PDF ↓</a></div>`;
   const q=selector=>dialog.querySelector(selector);
   const sync=()=>{
-    q('#export-count').textContent=`Выбрано ${ids.size} из ${candidates.length}`;
-    q('#create-pdf').disabled=!ids.size||busy;
+    q('#export-count').textContent=`Карточки: ${ids.size} из ${candidates.length} · Упражнения: ${pickedExercises.size}`;
+    q('#create-pdf').disabled=(!ids.size&&!pickedExercises.size)||busy;
     dialog.querySelectorAll('[data-export-id]').forEach(input=>input.checked=ids.has(input.dataset.exportId));
   };
   const invalidate=()=>{generation++;revoke();q('#download-pdf').hidden=true;q('#create-pdf').hidden=false;q('#export-status').textContent='';};
   dialog.onchange=event=>{
     if(busy)return;
+    const exerciseId=event.target.dataset.exportExercise;
+    if(exerciseId){if(event.target.checked)pickedExercises.add(exerciseId);else pickedExercises.delete(exerciseId);}
     const id=event.target.dataset.exportId;
     if(id){if(event.target.checked)ids.add(id);else ids.delete(id);}
     invalidate();sync();
@@ -79,7 +86,7 @@ export function openReport({cards,profile,cardText}){
       ids=new Set(candidates.filter(c=>action==='all'||action==='discuss'&&snapshot.cards[c.id]?.discuss).map(c=>c.id));
       invalidate();sync();return;
     }
-    if(action!=='create'||!ids.size)return;
+    if(action!=='create'||(!ids.size&&!pickedExercises.size))return;
     const token=++generation;busy=true;revoke();q('#export-controls').disabled=true;sync();
     q('#create-pdf').textContent='Создаём PDF…';
     const status=text=>{if(generation===token&&dialog.open)q('#export-status').textContent=text;};
@@ -96,14 +103,15 @@ export function openReport({cards,profile,cardText}){
       if(generation!==token||!dialog.open)return;
       status('Собираем страницы…');
       const date=new Date();
-      const definition=buildReport({cards,profile:snapshot,cardText,ids:[...ids],options,images,date});
+      const definition=buildReport({cards,profile:snapshot,cardText,ids:[...ids],exerciseIds:[...pickedExercises],options,images,date});
       const blob=await makeBlob(pdfMake,definition);
       if(generation!==token||!dialog.open)return;
       url=URL.createObjectURL(blob);
       const filename=`vnutri-${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}.pdf`;
       const link=q('#download-pdf');link.href=url;link.download=filename;link.hidden=false;
       q('#create-pdf').hidden=true;
-      status(`PDF готов · ${(blob.size/1024/1024).toLocaleString('ru-RU',{maximumFractionDigits:1})} МБ. Если скачивание не началось, нажмите кнопку ещё раз.`);
+      const size=blob.size<1024*1024?`${Math.ceil(blob.size/1024)} КБ`:`${(blob.size/1024/1024).toLocaleString('ru-RU',{maximumFractionDigits:1})} МБ`;
+      status(`PDF готов · ${size}. Если скачивание не началось, нажмите кнопку ещё раз.`);
       link.click();
     }catch(error){status(error.message||'Не удалось создать PDF. Попробуйте ещё раз.');}
     finally{if(generation===token&&dialog.open){busy=false;q('#export-controls').disabled=false;q('#create-pdf').textContent='Скачать PDF';sync();}}

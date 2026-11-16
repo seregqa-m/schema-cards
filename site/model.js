@@ -1,7 +1,8 @@
+import {validateExercises} from './exercises-model.js?v=20261116ex2';
 export const STORAGE_KEY='vnutri.profile.v1';
 export const ratings={yes:'Узнаю себя',sometimes:'Иногда похоже',unsure:'Пока не понимаю',no:'Не узнаю'};
 export const fields=['ownName','situation','feelings','thoughts','actions','need','support','note'];
-export function emptyProfile(){return {format:'vnutri-profile',version:1,updatedAt:null,cards:{},sessionNote:'',situation:{event:'',schema:'',mode:'',need:'',resource:'',step:''}};}
+export function emptyProfile(){return {format:'vnutri-profile',version:1,updatedAt:null,cards:{},sessionNote:'',situation:{event:'',schema:'',mode:'',need:'',resource:'',step:''},exercises:[]};}
 export function validateProfile(value,ids){
  if(!value||value.format!=='vnutri-profile'||value.version!==1||!value.cards||typeof value.cards!=='object'||Array.isArray(value.cards))throw new Error('Это не файл профиля «Внутри» версии 1.');
  const p=emptyProfile();const allowed=new Set(ids);
@@ -20,6 +21,7 @@ export function validateProfile(value,ids){
   for(const key of Object.keys(p.situation))p.situation[key]=str(value.situation[key]);
   for(const key of ['schema','mode','need','resource'])if(p.situation[key]&&!allowed.has(p.situation[key]))throw new Error('В ситуации указана неизвестная карточка.');
  }
+ p.exercises=validateExercises(value.exercises,ids);
  return p;
 }
 export function meaningful(e){return !!e&&(!!e.rating||e.discuss||e.resource||fields.some(k=>e[k]?.trim()));}

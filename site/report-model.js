@@ -1,17 +1,22 @@
-import {ratings,fields,selected} from './model.js';
+import {ratings,fields,selected} from './model.js?v=20261116ex2';
+import {exerciseByType,exerciseFields} from './exercises-data.js?v=20261116ex2';
+import {exerciseHasContent,exerciseCardIds,exerciseTitle} from './exercises-model.js?v=20261116ex2';
 
 export const reportLabels={ownName:'Моё название',situation:'В какой ситуации это происходит?',feelings:'Чувства и ощущения в теле',thoughts:'Какие мысли появляются?',actions:'Что я делаю в ответ?',need:'В чём я нуждаюсь?',support:'Что помогает / какой шаг я могу выбрать?',note:'Что хочу обсудить с психологом?'};
 const typeNames={need:'Потребность',schema:'Ранняя схема',resource:'Позитивная схема',mode:'Режим'};
 
 export function reportCards(cards,profile){
-  return cards.filter(c=>selected(profile.cards[c.id])).sort((a,b)=>Number(!!profile.cards[b.id]?.discuss)-Number(!!profile.cards[a.id]?.discuss));
+  const linked=new Set((profile.exercises||[]).filter(exerciseHasContent).flatMap(exerciseCardIds));
+  return cards.filter(c=>selected(profile.cards[c.id])||linked.has(c.id)).sort((a,b)=>Number(!!profile.cards[b.id]?.discuss)-Number(!!profile.cards[a.id]?.discuss));
 }
 
-export function buildReport({cards,profile,cardText,ids,options={},images={},date=new Date()}){
+export function buildReport({cards,profile,cardText,ids,exerciseIds=[],options={},images={},date=new Date()}){
   const include={images:true,fullText:true,notes:true,context:true,...options};
   const wanted=new Set(ids);
   const chosen=reportCards(cards,profile).filter(c=>wanted.has(c.id));
-  if(!chosen.length)throw new Error('Выберите хотя бы одну карточку.');
+  const wantedExercises=new Set(exerciseIds);
+  const exercises=(profile.exercises||[]).filter(e=>wantedExercises.has(e.id)&&exerciseHasContent(e));
+  if(!chosen.length&&!exercises.length)throw new Error('Выберите хотя бы одну карточку или запись упражнения.');
   const block=(label,value)=>[
     {text:label,style:'label',headlineLevel:2},
     {text:String(value),style:'body',margin:[0,0,0,12]}
@@ -19,7 +24,7 @@ export function buildReport({cards,profile,cardText,ids,options={},images={},dat
   const content=[
     {text:'ВНУТРИ / КАРТОЧКИ СХЕМА-ТЕРАПИИ',style:'eyebrow'},
     {text:'Карта для встречи\nс психологом',style:'cover'},
-    {text:`${date.toLocaleDateString('ru-RU')} · Карточек: ${chosen.length}`,style:'meta',margin:[0,8,0,20]},
+    {text:`${date.toLocaleDateString('ru-RU')} · Карточек: ${chosen.length} · Упражнений: ${exercises.length}`,style:'meta',margin:[0,8,0,20]},
     {text:'Личные наблюдения для совместного обсуждения. Это не диагноз и не результат психологического теста.',style:'body',margin:[0,0,0,22]}
   ];
   if(include.context){
@@ -32,8 +37,14 @@ export function buildReport({cards,profile,cardText,ids,options={},images={},dat
     }
     if(situation.step?.trim())content.push(...block('Поддерживающий шаг',situation.step));
   }
-  content.push({text:'Выбранные карточки',style:'section',margin:[0,15,0,10]});
-  content.push({ol:chosen.map(c=>({text:c.title,linkToDestination:c.id,margin:[0,0,0,5]})),fontSize:10.5,color:'#304e3e'});
+  if(chosen.length){
+    content.push({text:'Выбранные карточки',style:'section',margin:[0,15,0,10]});
+    content.push({ol:chosen.map(c=>({text:c.title,linkToDestination:c.id,margin:[0,0,0,5]})),fontSize:10.5,color:'#304e3e'});
+  }
+  if(exercises.length){
+    content.push({text:'Записи упражнений',style:'section',margin:[0,15,0,10]});
+    content.push({ul:exercises.map(e=>({text:exerciseTitle(e),linkToDestination:'exercise-'+e.id,margin:[0,0,0,5]})),fontSize:10.5,color:'#304e3e'});
+  }
   content.push({text:'Иллюстрации и тексты колоды: © 2021 ООО «Институт Схема-Терапии» (Москва). Художник Юлия Зайцевская. Пояснения режимов и вопросы сервиса отделены от оригинального текста колоды.',style:'meta',margin:[0,24,0,0]});
 
   chosen.forEach((c,index)=>{
@@ -59,6 +70,19 @@ export function buildReport({cards,profile,cardText,ids,options={},images={},dat
       }
     }
   });
+  for(const entry of exercises){
+    const def=exerciseByType(entry.type);
+    content.push({text:'УПРАЖНЕНИЕ / '+def.title,style:'eyebrow',pageBreak:'before',id:'exercise-'+entry.id});
+    content.push({text:exerciseTitle(entry),style:'cardTitle',margin:[0,8,0,12]});
+    content.push({text:new Date(entry.createdAt).toLocaleDateString('ru-RU'),style:'meta',margin:[0,0,0,16]});
+    for(const slot of def.slots){
+      const card=chosen.find(c=>c.id===entry.cards[slot.id]);
+      if(card)content.push({text:[{text:slot.label+' ',bold:true},card.title],style:'body',margin:[0,0,0,8]});
+    }
+    for(const field of exerciseFields(entry.type))if(entry.answers[field.id]?.trim())content.push(...block(field.label,entry.answers[field.id]));
+    content.push({text:'Вопросы адаптированы сервисом для самонаблюдения и обсуждения с психологом. Это не диагностический тест.',style:'meta',margin:[0,16,0,6]});
+    for(const source of def.sources)content.push({text:source.title,link:source.url,style:'meta',margin:[0,0,0,4]});
+  }
   return {
     pageSize:'A4',pageMargins:[42,44,42,44],language:'ru-RU',
     info:{title:'Карта для встречи с психологом',author:'Внутри',subject:'Выбранные карточки и личные наблюдения'},
