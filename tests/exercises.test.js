@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {cards} from '../site/data.js';
 import {cardText} from '../site/card-text.js';
 import {emptyProfile,validateProfile} from '../site/model.js';
-import {newExercise,exerciseCardIds} from '../site/exercises-model.js';
+import {newExercise,exerciseCardIds,setExerciseCard} from '../site/exercises-model.js';
 import {buildReport,reportCards} from '../site/report-model.js';
-import {exerciseHome,exerciseEditor} from '../site/exercises.js';
+import {exerciseHome,exerciseEditor,exercisePicker} from '../site/exercises.js';
 
 const ids=cards.map(c=>c.id);
 const mode=cards.find(c=>c.type==='mode'),need=cards.find(c=>c.type==='need');
@@ -49,4 +49,36 @@ test('only selected referenced cards enter PDF, and selecting an exercise never 
   const content=JSON.stringify(buildReport({cards,profile:p,cardText,ids:[need.id],exerciseIds:['test-one'],options:{images:false,context:false}}).content);
   assert(content.includes(need.title));assert(!content.includes(mode.title));
   assert.equal(JSON.stringify(p),before);
+});
+
+test('visual selection accepts only cards for its slot and preserves answers and other choices',()=>{
+  const p=fixture(),e=p.exercises[0],answers={...e.answers},original=JSON.stringify(p);
+  assert.equal(setExerciseCard(e,'mode',need.id,cards),false);
+  assert.equal(setExerciseCard(e,'unknown',mode.id,cards),false);
+  assert.equal(setExerciseCard(e,'need','missing-card',cards),false);
+  assert.equal(JSON.stringify(p),original);
+  const healthy=cards.find(c=>c.type==='mode'&&c.subgroup==='Здоровые режимы');
+  assert.equal(setExerciseCard(e,'resource',healthy.id,cards),true);
+  assert.equal(setExerciseCard(e,'need','',cards),true);
+  assert.equal(e.cards.mode,mode.id);
+  assert.equal(e.cards.need,'');
+  assert.equal(e.cards.resource,healthy.id);
+  assert.deepEqual(e.answers,answers);
+  assert.deepEqual(p.cards,{});
+  assert.equal(validateProfile(JSON.parse(JSON.stringify(p)),ids).exercises[0].cards.resource,healthy.id);
+});
+test('visual galleries show every suitable illustration and mark the saved selection',()=>{
+  const e=fixture().exercises[0];
+  const html=exercisePicker(e,'mode',cards);
+  assert.equal((html.match(/class="picker-card"/g)||[]).length,cards.filter(c=>c.type==='mode').length);
+  assert.equal((html.match(/<img /g)||[]).length,33);
+  assert(html.includes(`data-exercise-select="${mode.id}" aria-label="Выбрать карточку: ${mode.title}" aria-pressed="true"`));
+  assert(!html.includes(`data-exercise-select="${need.id}"`));
+  const resource=exercisePicker(e,'resource',cards);
+  for(const c of cards){
+    const suitable=c.type==='resource'||(c.type==='mode'&&c.subgroup==='Здоровые режимы');
+    assert.equal(resource.includes(`data-exercise-select="${c.id}"`),suitable);
+  }
+  assert.equal(exercisePicker(e,'unknown',cards),'');
+  assert(!exerciseEditor(e,cards).includes('<select'));
 });

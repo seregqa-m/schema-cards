@@ -1,6 +1,7 @@
 import {openReport} from './report.js?v=20261116ex2';
-import {exerciseHome,exerciseEditor,exercisePreview} from './exercises.js?v=20261116ex2';
-import {newExercise,exerciseCardIds} from './exercises-model.js?v=20261116ex2';
+import {exerciseHome,exerciseEditor,exerciseSlot,exercisePicker} from './exercises.js?v=20261118visual1';
+import {newExercise,exerciseCardIds,setExerciseCard} from './exercises-model.js?v=20261118visual1';
+import {exerciseByType} from './exercises-data.js?v=20261116ex2';
 import {cards,inventory} from './data.js?v=20261116c';
 import {cardText} from './card-text.js?v=20261116c';
 import {STORAGE_KEY,ratings,fields,emptyProfile,validateProfile,meaningful,selected,escapeHtml as esc} from './model.js?v=20261116ex2';
@@ -11,7 +12,7 @@ const thumbnail=path=>illustration(path.replace('assets/','assets/thumbs/'));
 const types={need:{name:'Потребности',singular:'Потребность',icon:'◌',hint:'В чём я нуждаюсь',text:'Базовые условия для эмоционального благополучия: близость, безопасность, автономия, выражение чувств, игра и понятные границы. В этой колоде они раскрыты в десяти карточках.'},schema:{name:'Ранние схемы',singular:'Ранняя схема',icon:'◇',hint:'Какие убеждения повторяются',text:'Устойчивые темы в восприятии себя и отношений. Схема может влиять на то, как мы понимаем происходящее; её узнавание — гипотеза для исследования, а не доказательство того, что убеждение верно.'},resource:{name:'Позитивные схемы',singular:'Позитивная схема',icon:'✳',hint:'На что я могу опереться',text:'Ресурсные представления о себе и отношениях. Можно замечать, где они уже доступны, и обсуждать, какого опыта хотелось бы больше. Не нужно требовать от себя постоянного спокойствия или оптимизма.'},mode:{name:'Режимы',singular:'Режим',icon:'◒',hint:'Что происходит со мной сейчас',text:'Состояние в определённый момент: сочетание чувств, мыслей и способов реагирования. Режимы могут сменять друг друга и сочетаться. Название карточки описывает состояние, а не вашу личность целиком.'}};
 const labels={ownName:'Моё название этого режима',situation:'В какой ситуации это происходит?',feelings:'Чувства и ощущения в теле',thoughts:'Какие мысли появляются?',actions:'Что я делаю в ответ?',need:'В чём я нуждаюсь в этот момент?',support:'Что помогает / какой шаг я могу выбрать?',note:'Что хочу обсудить с психологом?'};
 let profile=emptyProfile(),storageReady=true,view='library',type='all',query='',filter='all',subgroup='all',currentId=null,sequence=[],toastTimer;
-let activeExercise=null;
+let activeExercise=null,pickerSlot=null;
 try{const raw=localStorage.getItem(STORAGE_KEY);if(raw)profile=validateProfile(JSON.parse(raw),cards.map(c=>c.id));}catch(e){storageReady=false;warn('Не удалось прочитать сохранённый профиль. Старые данные не перезаписываются. Новые заметки пока живут только в этой вкладке: выгрузите их в файл. В разделе «Данные и приватность» можно скачать исходную копию или сбросить сохранение.');}
 function warn(message){$('#warning').hidden=false;$('#warning').textContent=message;}
 function toast(message){clearTimeout(toastTimer);$('#toast').textContent=message;$('#toast').hidden=false;toastTimer=setTimeout(()=>$('#toast').hidden=true,3800);}
@@ -21,7 +22,7 @@ function cardById(id){return cards.find(c=>c.id===id);}
 function entry(id){return profile.cards[id]||{};}
 function patch(id,changes){profile.cards[id]={...entry(id),...changes};persist();}
 function choices(){return cards.filter(c=>(type==='all'||c.type===type)&&(subgroup==='all'||c.subgroup===subgroup)&&(!query||`${c.title} ${c.description} ${c.subgroup}`.toLocaleLowerCase('ru').replaceAll('ё','е').includes(query.toLocaleLowerCase('ru').replaceAll('ё','е')))&&(filter==='all'||(filter==='unseen'&&!meaningful(entry(c.id)))||(filter==='chosen'&&selected(entry(c.id)))||(filter==='discuss'&&entry(c.id).discuss)));}
-function showView(next){view=next;history.replaceState(null,'','#'+view);currentId=null;if($('#card-dialog').open)$('#card-dialog').close();$$('[data-view]').forEach(b=>{b.classList.toggle('active',b.dataset.view===view);if(b.classList.contains('nav-item'))b.setAttribute('aria-current',b.dataset.view===view?'page':'false');});$('#breadcrumb').textContent=({library:'Пространство для самонаблюдения',profile:'Моя карта • только в этом браузере',exercises:'Упражнения • только в этом браузере',guide:'Знакомство с карточками',privacy:'Личные записи под вашим контролем'})[view];render();window.scrollTo({top:0,behavior:'instant'});}
+function showView(next){if($('#exercise-picker').open)$('#exercise-picker').close();view=next;history.replaceState(null,'','#'+view);currentId=null;if($('#card-dialog').open)$('#card-dialog').close();$$('[data-view]').forEach(b=>{b.classList.toggle('active',b.dataset.view===view);if(b.classList.contains('nav-item'))b.setAttribute('aria-current',b.dataset.view===view?'page':'false');});$('#breadcrumb').textContent=({library:'Пространство для самонаблюдения',profile:'Моя карта • только в этом браузере',exercises:'Упражнения • только в этом браузере',guide:'Знакомство с карточками',privacy:'Личные записи под вашим контролем'})[view];render();window.scrollTo({top:0,behavior:'instant'});}
 function render(){if(view==='library')renderLibrary();if(view==='profile')renderProfile();if(view==='guide')renderGuide();if(view==='privacy')renderPrivacy();if(view==='exercises'){const e=profile.exercises.find(x=>x.id===activeExercise);$('#main').innerHTML=e?exerciseEditor(e,cards,storageReady):exerciseHome(profile.exercises);}updateCounts();}
 function typeTiles(){return Object.entries(types).map(([key,t])=>`<button class="type-tile type-${key}" data-type="${key}" aria-pressed="${type===key}"><span class="type-top"><span>${t.icon}</span><span class="type-number">${cards.filter(c=>c.type===key).length}</span></span><strong>${t.name}</strong><small>${t.hint}</small></button>`).join('');}
 function renderLibrary(){
@@ -44,7 +45,35 @@ function download(text,name){const url=URL.createObjectURL(new Blob([text],{type
 function exportProfile(){download(JSON.stringify(profile,null,2),`vnutri-profile-${new Date().toISOString().slice(0,10)}.json`);toast('Файл профиля подготовлен для скачивания');}
 function ask(title,text,button='Подтвердить'){return new Promise(resolve=>{const dialog=$('#confirm-dialog');$('#confirm-title').textContent=title;$('#confirm-text').textContent=text;$('#confirm-yes').textContent=button;dialog.returnValue='cancel';dialog.addEventListener('close',()=>resolve(dialog.returnValue==='yes'),{once:true});dialog.showModal();});}
 function walk(){if(view!=='library'){type='all';query='';filter='all';subgroup='all';}const list=choices();if(!list.length){toast('Нет карточек для просмотра. Сбросьте фильтры.');return;}const first=list.find(c=>!meaningful(entry(c.id)))||list[0];openCard(first.id,list.map(c=>c.id));}
+function saveExerciseCard(slotId,cardId){
+  const e=profile.exercises.find(x=>x.id===activeExercise);
+  if(!e||!setExerciseCard(e,slotId,cardId,cards))return false;
+  const slot=exerciseByType(e.type).slots.find(s=>s.id===slotId);
+  $(`#slot-${slotId}`).innerHTML=exerciseSlot(slot,cardId,cards);
+  persist();exerciseSaved();return true;
+}
+function exerciseSaved(){
+  $('#exercise-save-status').textContent=storageReady?'Запись сохранена в этом браузере':'Запись только в памяти вкладки — скачайте JSON или PDF';
+}
+$('#exercise-picker').addEventListener('close',()=>{
+  if(pickerSlot&&view==='exercises')$(`[data-exercise-pick="${pickerSlot}"]`)?.focus({preventScroll:true});
+  pickerSlot=null;
+});
+
 document.addEventListener('click',async ev=>{const b=ev.target.closest('button,a[data-view]');if(!b)return;if(b.dataset.view){ev.preventDefault();if(b.dataset.view==='exercises')activeExercise=null;showView(b.dataset.view);return;}if(b.dataset.exerciseNew){if(profile.exercises.length>=100){toast('Достигнут предел 100 записей. Сохраните резервную копию и удалите ненужные записи.');return;}const e=newExercise(b.dataset.exerciseNew,crypto.randomUUID());profile.exercises.push(e);activeExercise=e.id;persist();showView('exercises');return;}
+ if(b.dataset.exercisePick){
+   const e=profile.exercises.find(x=>x.id===activeExercise);if(!e)return;
+   const html=exercisePicker(e,b.dataset.exercisePick,cards);if(!html)return;
+   pickerSlot=b.dataset.exercisePick;
+   const dialog=$('#exercise-picker');dialog.innerHTML=html;dialog.showModal();dialog.scrollTop=0;return;
+ }
+ if(b.hasAttribute('data-exercise-picker-close')){$('#exercise-picker').close();return;}
+ if(b.hasAttribute('data-exercise-select')){
+   if(pickerSlot&&saveExerciseCard(pickerSlot,b.dataset.exerciseSelect))$('#exercise-picker').close();return;
+ }
+ if(b.dataset.exerciseClear){
+   if(saveExerciseCard(b.dataset.exerciseClear,''))$(`[data-exercise-pick="${b.dataset.exerciseClear}"]`).focus({preventScroll:true});return;
+ }
  if(b.dataset.exerciseOpen){activeExercise=b.dataset.exerciseOpen;showView('exercises');return;}
  if(b.hasAttribute('data-exercise-home')){activeExercise=null;showView('exercises');return;}
  if(b.dataset.exercisePdf){const e=profile.exercises.find(x=>x.id===b.dataset.exercisePdf);if(e)openReport({cards,profile,cardText,exerciseIds:[e.id],cardIds:exerciseCardIds(e)});return;}
@@ -69,7 +98,7 @@ document.addEventListener('click',async ev=>{const b=ev.target.closest('button,a
  if(action==='reset'&&await ask('Удалить весь профиль?','Все локальные отметки, заметки, упражнения и разбор ситуации будут удалены. Сначала скачайте JSON, если хотите сохранить копию.','Удалить профиль')){try{localStorage.removeItem(STORAGE_KEY);storageReady=true;profile=emptyProfile();$('#warning').hidden=true;persist();render();toast('Локальный профиль удалён');}catch{warn('Не удалось удалить данные: браузер ограничил доступ к хранилищу.');}}
 });
 document.addEventListener('input',ev=>{const el=ev.target;
- if(el.hasAttribute('data-exercise-title')||el.dataset.exerciseAnswer||el.dataset.exerciseSlot){const e=profile.exercises.find(x=>x.id===activeExercise);if(!e)return;if(el.hasAttribute('data-exercise-title'))e.title=el.value;if(el.dataset.exerciseAnswer)e.answers[el.dataset.exerciseAnswer]=el.value;if(el.dataset.exerciseSlot){e.cards[el.dataset.exerciseSlot]=el.value;$('#preview-'+el.dataset.exerciseSlot).innerHTML=exercisePreview(el.value,cards);}persist();$('#exercise-save-status').textContent=storageReady?'Запись сохранена в этом браузере':'Запись только в памяти вкладки — скачайте JSON или PDF';return;}
+ if(el.hasAttribute('data-exercise-title')||el.dataset.exerciseAnswer){const e=profile.exercises.find(x=>x.id===activeExercise);if(!e)return;if(el.hasAttribute('data-exercise-title'))e.title=el.value;if(el.dataset.exerciseAnswer)e.answers[el.dataset.exerciseAnswer]=el.value;persist();exerciseSaved();return;}
  if(el.dataset.entry){patch(currentId,{[el.dataset.entry]:el.type==='checkbox'?el.checked:el.value});}if(el.id==='session-note'){profile.sessionNote=el.value;persist();}if(el.dataset.situation){profile.situation[el.dataset.situation]=el.value;persist();}});
 $('#card-dialog').addEventListener('close',()=>{currentId=null;render();});
 $('#import-file').addEventListener('change',async ev=>{const file=ev.target.files[0];ev.target.value='';if(!file)return;try{if(file.size>32_000_000)throw new Error('Файл слишком большой. Максимум 32 МБ.');const incoming=validateProfile(JSON.parse(await file.text()),cards.map(c=>c.id));if(!await ask('Загрузить этот профиль?',`В файле ${Object.values(incoming.cards).filter(meaningful).length} карточек с записями и ${incoming.exercises.length} записей упражнений. Загрузка заменит текущий профиль. Его можно предварительно скачать в JSON.`,'Заменить профиль'))return;profile=incoming;persist();showView('profile');toast(storageReady?'Профиль загружен и сохранён':'Профиль открыт только в памяти вкладки');}catch(e){toast(`Импорт отменён: ${e.message}`);}});

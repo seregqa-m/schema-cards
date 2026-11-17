@@ -6,8 +6,8 @@
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>Внутри — карточки схема-терапии</title>
-<link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css?v=20261116ex2">
-<script type="module" src="./app.js?v=20261116ex2"></script>
+<link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css?v=20261118visual1">
+<script type="module" src="./app.js?v=20261118visual1"></script>
 </head>
 <body>
 <a class="skip" href="#main">К содержимому</a>
@@ -31,6 +31,7 @@
 </div>
 <dialog id="card-dialog" aria-labelledby="card-title"><div id="card-content"></div></dialog>
 <dialog id="confirm-dialog" aria-labelledby="confirm-title"><form method="dialog"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="button-row"><button value="cancel" class="button">Отмена</button><button value="yes" class="button primary-button" id="confirm-yes">Подтвердить</button></div></form></dialog>
+<dialog id="exercise-picker" aria-labelledby="exercise-picker-title" aria-describedby="exercise-picker-hint"></dialog>
 <dialog id="export-dialog" aria-labelledby="export-title"></dialog>
 <div id="toast" role="status" hidden></div>
 <input type="file" id="import-file" accept="application/json,.json" hidden>

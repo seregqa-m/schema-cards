@@ -1,4 +1,4 @@
-import {exerciseByType,exerciseFields} from './exercises-data.js?v=20261116ex2';
+import {exerciseByType,exerciseFields,slotAccepts} from './exercises-data.js?v=20261116ex2';
 
 export function newExercise(type,id,date=new Date()){
   if(!exerciseByType(type))throw new Error('Неизвестное упражнение.');
@@ -24,3 +24,12 @@ export function validateExercises(value,allowedIds){
 export const exerciseTitle=entry=>entry.title?.trim()||exerciseByType(entry.type)?.title||'Упражнение';
 export const exerciseHasContent=entry=>Object.values(entry.answers||{}).some(v=>v?.trim())||Object.values(entry.cards||{}).some(Boolean)||!!entry.title?.trim();
 export const exerciseCardIds=entry=>[...new Set(Object.values(entry.cards||{}).filter(Boolean))];
+
+export function setExerciseCard(entry,slotId,cardId,cards){
+  const slot=exerciseByType(entry.type)?.slots.find(s=>s.id===slotId);
+  if(!slot)return false;
+  const card=cards.find(c=>c.id===cardId);
+  if(cardId!==''&&(!card||!slotAccepts(slot,card)))return false;
+  entry.cards[slotId]=cardId;
+  return true;
+}

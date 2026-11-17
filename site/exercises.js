@@ -1,5 +1,5 @@
 import {exerciseTypes,exerciseByType,slotAccepts} from './exercises-data.js?v=20261116ex2';
-import {exerciseTitle} from './exercises-model.js?v=20261116ex2';
+import {exerciseTitle} from './exercises-model.js?v=20261118visual1';
 import {escapeHtml as esc} from './model.js?v=20261116ex2';
 
 const dateLabel=value=>new Date(value).toLocaleDateString('ru-RU');
@@ -17,12 +17,26 @@ export function exerciseEditor(entry,cards,storageReady=true){
   const def=exerciseByType(entry.type);
   return `<div class="exercise-editor"><button class="text-button" data-exercise-home>← Все упражнения и записи</button><header class="exercise-heading"><span class="eyebrow">${def.time} · ${dateLabel(entry.createdAt)}</span><h1>${def.title}</h1><p>${def.intro}</p></header><p class="exercise-storage" id="exercise-save-status" role="status">${storageReady?'Изменения сохраняются только в этом браузере':'Запись только в памяти вкладки — скачайте JSON или PDF'}</p>
   <label class="label" for="exercise-title">Название записи · необязательно</label><input id="exercise-title" data-exercise-title maxlength="160" value="${esc(entry.title)}" placeholder="Например: разговор после встречи">
-  <section class="panel"><h2>Карточки для этого упражнения</h2><p>Выберите подходящие изображения. Нажмите на миниатюру, чтобы прочитать описание.</p><div class="exercise-slots">${def.slots.map(slot=>`<div class="exercise-slot"><label class="label" for="slot-${slot.id}">${slot.label}</label><select id="slot-${slot.id}" data-exercise-slot="${slot.id}"><option value="">Пока без карточки</option>${cards.filter(c=>slotAccepts(slot,c)||c.id===entry.cards[slot.id]).map(c=>`<option value="${c.id}" ${entry.cards[slot.id]===c.id?'selected':''}>${esc(c.title)}</option>`).join('')}</select><div id="preview-${slot.id}">${exercisePreview(entry.cards[slot.id],cards)}</div></div>`).join('')}</div><p class="tiny">Выбор здесь не меняет отметки карточек в профиле.</p></section>
+  <section class="panel"><h2>Карточки для этого упражнения</h2><p>Откройте галерею и выберите картинку, которая откликается. Любой выбор можно пропустить или изменить.</p><div class="exercise-slots">${def.slots.map(slot=>`<div class="exercise-slot" id="slot-${slot.id}">${exerciseSlot(slot,entry.cards[slot.id],cards)}</div>`).join('')}</div><p class="tiny">Выбор здесь не меняет отметки карточек в профиле.</p></section>
   ${def.sections.map((section,index)=>`<section class="panel exercise-step"><span class="eyebrow">ШАГ ${index+1} ИЗ ${def.sections.length}</span><h2>${section.title}</h2>${section.fields.map(field=>`<label class="label" for="answer-${field.id}">${field.label}</label>${field.hint?`<p class="exercise-hint" id="hint-${field.id}">${field.hint}</p>`:''}<textarea id="answer-${field.id}" data-exercise-answer="${field.id}" maxlength="12000" rows="3" ${field.hint?`aria-describedby="hint-${field.id}"`:''} placeholder="Можно написать несколько слов или пропустить">${esc(entry.answers[field.id]||'')}</textarea>`).join('')}</section>`).join('')}
   ${sources(def)}<div class="exercise-actions"><button class="button primary-button" data-exercise-pdf="${entry.id}">PDF этой записи ↓</button><button class="button" data-exercise-home>К моим записям</button></div><p class="tiny muted">Если сейчас трудно продолжать, можно остановиться. Вопросы и незаконченные ответы тоже можно обсудить с психологом.</p></div>`;
 }
 
-export function exercisePreview(id,cards){
-  const c=cards.find(c=>c.id===id);
-  return c?`<button class="exercise-preview" data-card="${c.id}" aria-label="Прочитать карточку: ${esc(c.title)}"><img src="${esc(c.front.replace('assets/','assets/thumbs/'))}?v=20261116c" alt="" width="90" height="120"><span>${esc(c.title)}<small>Описание и иллюстрация ↗</small></span></button>`:'';
+const thumbnail=card=>`${esc(card.front.replace('assets/','assets/thumbs/'))}?v=20261116c`;
+
+export function exerciseSlot(slot,id,cards){
+  const card=cards.find(c=>c.id===id);
+  return `<h3 class="label" id="slot-label-${slot.id}">${esc(slot.label)}</h3>
+  <button class="exercise-choice ${card?'has-card':'is-empty'}" data-exercise-pick="${slot.id}" aria-haspopup="dialog" aria-label="${esc(card?`Заменить карточку: ${card.title}. ${slot.label}`:`Выбрать по картинкам: ${slot.label}`)}">
+    ${card?`<img src="${thumbnail(card)}" alt="" width="360" height="480"><span>${esc(card.title)}<small>Заменить картинку ↻</small></span>`:'<span class="exercise-choice-placeholder"><span aria-hidden="true">＋</span>Выбрать<br>по картинкам</span>'}
+  </button>${card?`<div class="exercise-choice-actions"><button class="text-button" data-card="${card.id}" aria-label="Описание карточки: ${esc(card.title)}">Описание</button><button class="text-button muted" data-exercise-clear="${slot.id}" aria-label="Убрать карточку: ${esc(card.title)}">Убрать</button></div>`:''}`;
+}
+
+export function exercisePicker(entry,slotId,cards){
+  const slot=exerciseByType(entry.type)?.slots.find(s=>s.id===slotId);
+  if(!slot)return '';
+  const options=cards.filter(card=>slotAccepts(slot,card));
+  return `<header class="dialog-toolbar picker-toolbar"><div><span class="eyebrow">ВЫБОР ПО КАРТИНКАМ · ${options.length}</span><h2 id="exercise-picker-title">${esc(slot.label)}</h2><p id="exercise-picker-hint">Нажмите на картинку, которая откликается.</p></div><button class="icon-button" data-exercise-picker-close aria-label="Закрыть выбор карточки" autofocus>×</button></header>
+  <div class="exercise-picker-grid">${options.map(card=>`<button class="picker-card" data-exercise-select="${card.id}" aria-label="Выбрать карточку: ${esc(card.title)}" aria-pressed="${entry.cards[slotId]===card.id}"><img src="${thumbnail(card)}" alt="" width="360" height="480" loading="lazy"><span class="picker-card-title">${esc(card.title)}</span>${entry.cards[slotId]===card.id?'<span class="picker-selected" aria-hidden="true">✓ Выбрана</span>':''}</button>`).join('')}</div>
+  <footer class="picker-footer"><button class="button" data-exercise-select="">Пока без карточки</button><span class="tiny muted">Выбор можно изменить в любой момент</span></footer>`;
 }
