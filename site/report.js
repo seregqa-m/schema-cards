@@ -54,7 +54,7 @@ export function openReport({cards,profile,cardText,exerciseIds,cardIds}){
   const revoke=()=>{if(url){URL.revokeObjectURL(url);url=null;}};
   dialog.innerHTML=`<div class="dialog-toolbar export-toolbar"><h2 id="export-title">PDF для психолога</h2><button class="close" data-report="close" aria-label="Закрыть выгрузку">×</button></div>
     <div class="export-body"><p>Выберите, что взять на встречу. Каждая карточка и запись упражнения начнётся с новой страницы; длинные заметки продолжатся на следующих.</p>
-    <p class="export-privacy">Файл создаётся на вашем устройстве. Ничего не отправляется на сервер.</p>
+    <div class="export-privacy"><p><strong>Ваши ответы, отметки и заметки не отправляются на сервер.</strong> PDF собирается в вашем браузере и скачивается на устройство.</p><a href="https://github.com/seregqa-m/schema-cards" target="_blank" rel="noopener noreferrer">Открытый код на GitHub ↗</a></div>
     <fieldset id="export-controls"><legend class="sr-only">Состав PDF</legend>
     <div class="export-options"><label><input type="checkbox" data-option="images" checked> Иллюстрации</label><label><input type="checkbox" data-option="fullText" checked> Полные описания</label><label><input type="checkbox" data-option="notes" ${exerciseIds?'':'checked'}> Мои заметки к карточкам</label><label><input type="checkbox" data-option="context" ${exerciseIds?'':'checked'}> Тема встречи и разбор ситуации</label></div>
     <div class="export-selection-header"><strong id="export-count"></strong><div class="button-row"><button class="text-button" data-report="all">Все карточки</button><button class="text-button" data-report="discuss">Только «Хочу обсудить»</button><button class="text-button" data-report="none">Снять выбор карточек</button></div></div>

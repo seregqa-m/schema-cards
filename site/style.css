@@ -145,3 +145,10 @@
  .export-bottom{padding:12px 18px max(12px,env(safe-area-inset-bottom))}
  .export-bottom>.button{width:100%;min-height:48px}
 }
+
+.privacy-assurance{margin:18px 0 0;padding-top:16px;border-top:1px solid var(--line);font-size:12px;line-height:1.6;color:#526354}
+.privacy-assurance p{margin:0 0 4px}.privacy-assurance strong{font-weight:600}
+.privacy-assurance a,.export-privacy a{display:inline-flex;align-items:center;min-height:44px;font-size:12px}
+.export-privacy p{margin:0 0 4px;font-size:14px}
+@media(max-width:760px){.privacy-assurance{margin:0 0 12px;padding-top:12px;font-size:12px}.privacy-assurance p{max-width:540px}}
+@media(min-width:761px){.sidebar{overflow-y:auto}.sidebar>*{flex-shrink:0}}
