@@ -1,4 +1,4 @@
-import {exerciseByType,exerciseFields,slotAccepts} from './exercises-data.js?v=20261116ex2';
+import {exerciseByType,exerciseFields,slotAccepts} from './exercises-data.js?v=20261123pair1';
 
 export function newExercise(type,id,date=new Date()){
   if(!exerciseByType(type))throw new Error('Неизвестное упражнение.');

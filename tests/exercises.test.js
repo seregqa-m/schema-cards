@@ -82,3 +82,32 @@ test('visual galleries show every suitable illustration and mark the saved selec
   assert.equal(exercisePicker(e,'unknown',cards),'');
   assert(!exerciseEditor(e,cards).includes('<select'));
 });
+
+test('pair exercises keep both participants independent through local JSON and PDF',()=>{
+  for(const [type,firstSlot,secondSlot,firstField,secondField] of [
+    ['pair-checkin','first-mode','second-mode','first-experience','second-experience'],
+    ['pair-good-together','first-resource','second-resource','first-memory','second-memory']
+  ]){
+    const p=emptyProfile(),e=newExercise(type,'pair-test');p.exercises=[e];
+    const healthy=cards.find(c=>c.type==='mode'&&c.subgroup==='Здоровые режимы');
+    assert(setExerciseCard(e,firstSlot,healthy.id,cards));
+    assert(setExerciseCard(e,secondSlot,healthy.id,cards));
+    e.answers[firstField]='Ответ первого <участника>\nОтдельная строка';
+    e.answers[secondField]='Ответ второго </textarea><script>example</script>';
+    const restored=validateProfile(JSON.parse(JSON.stringify(p)),ids);
+    const copy=restored.exercises[0];
+    assert.equal(copy.answers[firstField],e.answers[firstField]);
+    assert.equal(copy.answers[secondField],e.answers[secondField]);
+    assert.deepEqual(exerciseCardIds(copy),[healthy.id]);
+    assert(setExerciseCard(copy,firstSlot,'',cards));
+    assert.equal(copy.cards[secondSlot],healthy.id);
+    assert.deepEqual(restored.cards,{});
+    const text=JSON.stringify(buildReport({cards,profile:restored,cardText,ids:[healthy.id],exerciseIds:['pair-test'],options:{images:false,context:false}}).content);
+    assert(text.includes('Участник 1'));assert(text.includes('Участник 2'));
+    assert(text.includes('Ответ первого'));assert(text.includes('Ответ второго'));
+    const html=exerciseEditor(copy,cards);
+    assert(html.includes('&lt;script&gt;example&lt;/script&gt;'));
+    assert(!html.includes('<script>'));assert(!html.includes('<select'));
+    assert.equal((html.match(new RegExp(`id="slot-${secondSlot}"`,'g'))||[]).length,1);
+  }
+});

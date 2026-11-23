@@ -1,6 +1,6 @@
-import {exerciseHasContent,exerciseTitle} from './exercises-model.js?v=20261116ex2';
-import {reportCards,buildReport} from './report-model.js?v=20261116ex2';
-import {escapeHtml as esc} from './model.js?v=20261116ex2';
+import {exerciseHasContent,exerciseTitle} from './exercises-model.js?v=20261123pair1';
+import {reportCards,buildReport} from './report-model.js?v=20261123pair1';
+import {escapeHtml as esc} from './model.js?v=20261123pair1';
 
 let runtimePromise;
 function loadScript(file){

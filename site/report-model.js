@@ -1,6 +1,6 @@
-import {ratings,fields,selected} from './model.js?v=20261116ex2';
-import {exerciseByType,exerciseFields} from './exercises-data.js?v=20261116ex2';
-import {exerciseHasContent,exerciseCardIds,exerciseTitle} from './exercises-model.js?v=20261116ex2';
+import {ratings,fields,selected} from './model.js?v=20261123pair1';
+import {exerciseByType,exerciseFields} from './exercises-data.js?v=20261123pair1';
+import {exerciseHasContent,exerciseCardIds,exerciseTitle} from './exercises-model.js?v=20261123pair1';
 
 export const reportLabels={ownName:'Моё название',situation:'В какой ситуации это происходит?',feelings:'Чувства и ощущения в теле',thoughts:'Какие мысли появляются?',actions:'Что я делаю в ответ?',need:'В чём я нуждаюсь?',support:'Что помогает / какой шаг я могу выбрать?',note:'Что хочу обсудить с психологом?'};
 const typeNames={need:'Потребность',schema:'Ранняя схема',resource:'Позитивная схема',mode:'Режим'};

@@ -1,4 +1,4 @@
-import {validateExercises} from './exercises-model.js?v=20261116ex2';
+import {validateExercises} from './exercises-model.js?v=20261123pair1';
 export const STORAGE_KEY='vnutri.profile.v1';
 export const ratings={yes:'Узнаю себя',sometimes:'Иногда похоже',unsure:'Пока не понимаю',no:'Не узнаю'};
 export const fields=['ownName','situation','feelings','thoughts','actions','need','support','note'];

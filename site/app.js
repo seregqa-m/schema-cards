@@ -1,10 +1,10 @@
-import {openReport} from './report.js?v=20261118privacy1';
-import {exerciseHome,exerciseEditor,exerciseSlot,exercisePicker} from './exercises.js?v=20261118visual1';
-import {newExercise,exerciseCardIds,setExerciseCard} from './exercises-model.js?v=20261118visual1';
-import {exerciseByType} from './exercises-data.js?v=20261116ex2';
+import {openReport} from './report.js?v=20261123pair1';
+import {exerciseHome,exerciseEditor,exerciseSlot,exercisePicker} from './exercises.js?v=20261123pair1';
+import {newExercise,exerciseCardIds,setExerciseCard} from './exercises-model.js?v=20261123pair1';
+import {exerciseByType} from './exercises-data.js?v=20261123pair1';
 import {cards,inventory} from './data.js?v=20261116c';
 import {cardText} from './card-text.js?v=20261116c';
-import {STORAGE_KEY,ratings,fields,emptyProfile,validateProfile,meaningful,selected,escapeHtml as esc} from './model.js?v=20261116ex2';
+import {STORAGE_KEY,ratings,fields,emptyProfile,validateProfile,meaningful,selected,escapeHtml as esc} from './model.js?v=20261123pair1';
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const illustration=path=>`${path}?v=20261116c`;
